@@ -23,42 +23,61 @@
         .login-input:focus { border-color: #00ff88; }
         .login-btn { width: 100%; max-width: 300px; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #00ff88, #00cc6a); color: #0a0a0a; font-size: 1em; font-weight: 600; cursor: pointer; }
 
-        /* ─── MAIN SCREEN ─── */
+        /* ─── MAIN ─── */
         .main-screen { display: none; flex-direction: column; height: 100vh; height: 100dvh; }
         .main-screen.active { display: flex; }
 
-        /* ─── HEADER ─── */
         .header { display: flex; align-items: center; padding: 12px 16px; background: #111; border-bottom: 1px solid #222; gap: 10px; }
         .header .avatar { font-size: 1.8em; }
         .header .info h2 { font-size: 1em; color: #fff; }
         .header .info .status { font-size: 0.7em; color: #00ff88; }
-        .mode-toggle { margin-left: auto; padding: 6px 12px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 0.75em; cursor: pointer; }
-        .mode-toggle.active { border-color: #00ff88; color: #00ff88; background: #00ff8815; }
+        .mode-btn { margin-left: auto; padding: 6px 14px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 0.75em; cursor: pointer; }
+        .mode-btn.active { border-color: #00ff88; color: #00ff88; background: #00ff8815; }
 
-        /* ─── VOICE BUTTON (MAIN UI) ─── */
-        .voice-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 20px; }
+        /* ─── VOICE (default) ─── */
+        .voice-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; }
         
-        .talk-btn { width: 140px; height: 140px; border-radius: 50%; border: 4px solid #00ff88; background: transparent; color: #00ff88; font-size: 3em; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; position: relative; }
-        .talk-btn:active, .talk-btn.recording { background: #00ff8830; border-color: #ff4444; color: #ff4444; transform: scale(1.05); }
-        .talk-btn.recording { animation: pulse-red 1s infinite; }
-        @keyframes pulse-red { 0%,100%{box-shadow: 0 0 0 0 rgba(255,68,68,0.4)} 50%{box-shadow: 0 0 0 20px rgba(255,68,68,0)} }
+        .talk-btn {
+            width: 130px; height: 130px; border-radius: 50%; border: none;
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #0a0a0a; font-size: 3.2em; cursor: pointer;
+            box-shadow: 0 4px 20px #00ff8840;
+            transition: all 0.15s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .talk-btn:active { transform: scale(0.95); }
+        .talk-btn.recording {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            box-shadow: 0 4px 20px #ff444440;
+            animation: pulse-rec 1s infinite;
+        }
+        @keyframes pulse-rec { 0%,100%{box-shadow: 0 4px 20px #ff444440} 50%{box-shadow: 0 4px 30px #ff444480} }
         
-        .talk-btn.speaking { background: #ff6b6b30; border-color: #ff6b6b; color: #ff6b6b; animation: pulse-speak 0.8s infinite; }
-        @keyframes pulse-speak { 0%,100%{box-shadow: 0 0 0 0 rgba(255,107,107,0.4)} 50%{box-shadow: 0 0 0 20px rgba(255,107,107,0)} }
+        .talk-btn.thinking {
+            background: linear-gradient(135deg, #ffd93d, #f0c000);
+            box-shadow: 0 4px 20px #ffd93d40;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
         
-        .talk-btn.thinking { background: #ffd93d20; border-color: #ffd93d; color: #ffd93d; }
+        .talk-btn.speaking {
+            background: linear-gradient(135deg, #6b8aff, #4466ff);
+            box-shadow: 0 4px 20px #6b8aff40;
+            animation: pulse-speak 0.8s infinite;
+        }
+        @keyframes pulse-speak { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
         
-        .talk-label { font-size: 1em; color: #888; text-align: center; }
-        .talk-label.active { color: #00ff88; }
+        .talk-label { font-size: 0.95em; color: #888; text-align: center; min-height: 1.3em; transition: color 0.2s; }
         .talk-label.recording { color: #ff4444; }
-        .talk-label.speaking { color: #ff6b6b; }
         .talk-label.thinking { color: #ffd93d; }
+        .talk-label.speaking { color: #6b8aff; }
 
-        .last-reply { max-width: 90%; padding: 12px 16px; background: #1e1e3a; border-radius: 16px; border-bottom-left-radius: 4px; font-size: 0.85em; line-height: 1.4; color: #ccc; display: none; }
+        .transcript { font-size: 0.8em; color: #666; font-style: italic; text-align: center; min-height: 1em; max-width: 85%; }
+        .last-reply { max-width: 85%; padding: 12px 16px; background: #1e1e3a; border-radius: 16px; border-bottom-left-radius: 4px; font-size: 0.85em; line-height: 1.4; color: #ccc; display: none; }
         .last-reply.visible { display: block; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-        /* ─── CHAT MODE ─── */
+        /* ─── CHAT ─── */
         .chat-area { display: none; flex: 1; flex-direction: column; }
         .chat-area.active { display: flex; }
         .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
@@ -72,14 +91,10 @@
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes dot { 0%,100%{opacity:0.3} 50%{opacity:1} }
-        
         .input-area { display: flex; align-items: center; padding: 10px 12px; background: #111; border-top: 1px solid #222; gap: 8px; }
         .input-area input { flex: 1; padding: 12px 16px; border: 1px solid #333; border-radius: 24px; background: #1a1a2e; color: #fff; font-size: 0.9em; outline: none; }
         .input-area input:focus { border-color: #00ff88; }
         .send-btn { width: 44px; height: 44px; border: none; border-radius: 50%; background: #00ff88; color: #0a0a0a; font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-        /* ─── TRANSCRIPT ─── */
-        .transcript { font-size: 0.8em; color: #666; font-style: italic; text-align: center; min-height: 1.2em; }
     </style>
 </head>
 <body>
@@ -87,7 +102,7 @@
 <div class="login-screen" id="loginScreen">
     <div class="avatar">📚</div>
     <h1>MaxChat</h1>
-    <p>Habla con Max — manos libres</p>
+    <p>Habla con Max — toca para hablar</p>
     <input class="login-input" id="nameInput" placeholder="Tu nombre..." maxlength="20" autofocus>
     <button class="login-btn" id="loginBtn">Entrar</button>
 </div>
@@ -97,17 +112,17 @@
         <div class="avatar">📚</div>
         <div class="info">
             <h2>Max</h2>
-            <div class="status" id="connStatus">Conectando...</div>
+            <div class="status" id="connStatus">Toca el botón para hablar</div>
         </div>
-        <button class="mode-toggle active" id="voiceModeBtn">🎤 Voz</button>
-        <button class="mode-toggle" id="chatModeBtn">💬 Chat</button>
+        <button class="mode-btn active" id="voiceModeBtn">🎤</button>
+        <button class="mode-btn" id="chatModeBtn">💬</button>
     </div>
 
-    <!-- VOICE MODE (default) -->
+    <!-- VOICE MODE -->
     <div class="voice-area" id="voiceArea">
         <div class="transcript" id="transcript"></div>
         <button class="talk-btn" id="talkBtn">🎤</button>
-        <div class="talk-label" id="talkLabel">Presiona para hablar</div>
+        <div class="talk-label" id="talkLabel">Toca para hablar</div>
         <div class="last-reply" id="lastReply"></div>
     </div>
 
@@ -141,7 +156,7 @@ const transcript = document.getElementById('transcript');
 const lastReply = document.getElementById('lastReply');
 const voiceArea = document.getElementById('voiceArea');
 const chatArea = document.getElementById('chatArea');
-const messages = document.getElementById('messages');
+const messagesEl = document.getElementById('messages');
 const msgInput = document.getElementById('msgInput');
 const sendBtn = document.getElementById('sendBtn');
 const voiceModeBtn = document.getElementById('voiceModeBtn');
@@ -175,19 +190,18 @@ chatModeBtn.onclick = () => {
     voiceArea.style.display = 'none';
 };
 
-// ─── VOICE: PRESS TO TALK ───
-talkBtn.addEventListener('pointerdown', startTalking);
-talkBtn.addEventListener('pointerup', stopTalking);
-talkBtn.addEventListener('pointerleave', () => { if(state === 'recording') stopTalking(); });
-talkBtn.addEventListener('pointercancel', () => { if(state === 'recording') stopTalking(); });
+// ─── VOICE: TAP ONCE TO RECORD ───
+// Tap starts recording, auto-stops after 10s or tap again to stop early
+talkBtn.onclick = async () => {
+    if (state === 'idle') {
+        await startRecording();
+    } else if (state === 'recording') {
+        await stopRecordingAndProcess();
+    }
+    // If thinking/transcribing/speaking, ignore taps
+};
 
-// Also support touch for mobile
-talkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startTalking(); });
-talkBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopTalking(); });
-
-async function startTalking() {
-    if (state !== 'idle') return;
-    
+async function startRecording() {
     // Stop any playing audio
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     
@@ -208,41 +222,40 @@ async function startTalking() {
         
         mediaRecorder.start();
         state = 'recording';
-        talkBtn.className = 'talk-btn recording';
-        talkLabel.className = 'talk-label recording';
-        talkLabel.textContent = '🔴 Grabando... suelta para enviar';
-        transcript.textContent = '';
+        updateUI();
+        
+        // Auto-stop after 10 seconds
+        setTimeout(() => {
+            if (state === 'recording') stopRecordingAndProcess();
+        }, 10000);
         
     } catch(e) {
-        alert('No se pudo acceder al micrófono: ' + e.message);
+        alert('Micrófono: ' + e.message);
     }
 }
 
-async function stopTalking() {
-    if (state !== 'recording') return;
+async function stopRecordingAndProcess() {
+    if (state !== 'recording' || !mediaRecorder || mediaRecorder.state !== 'recording') {
+        state = 'idle';
+        updateUI();
+        return;
+    }
     
     return new Promise((resolve) => {
-        if (!mediaRecorder || mediaRecorder.state !== 'recording') {
-            state = 'idle';
-            updateUI();
-            resolve();
-            return;
-        }
-        
         mediaRecorder.onstop = async () => {
             const mimeType = audioChunks.length > 0 ? audioChunks[0].type || 'audio/webm' : 'audio/webm';
             const blob = new Blob(audioChunks, { type: mimeType });
             audioChunks = [];
             
             if (blob.size < 500) {
-                // Too small, probably just noise
                 state = 'idle';
                 updateUI();
+                transcript.textContent = 'Muy corto. Intenta de nuevo.';
                 resolve();
                 return;
             }
             
-            // Transcribe
+            // Step 1: Transcribe
             state = 'transcribing';
             updateUI();
             
@@ -251,7 +264,6 @@ async function stopTalking() {
                 reader.onloadend = async () => {
                     const b64 = reader.result.split(',')[1];
                     
-                    // Step 1: Transcribe
                     const trRes = await fetch(SERVER_URL + '/api/transcribe', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -263,7 +275,7 @@ async function stopTalking() {
                     if (!userText) {
                         state = 'idle';
                         updateUI();
-                        transcript.textContent = 'No detecté voz. Intenta de nuevo.';
+                        transcript.textContent = 'No detecté voz. Toca de nuevo.';
                         resolve();
                         return;
                     }
@@ -271,7 +283,7 @@ async function stopTalking() {
                     transcript.textContent = '🎙️ "' + userText + '"';
                     addMsg('user', '🎙️ ' + userText);
                     
-                    // Step 2: Get AI response
+                    // Step 2: AI
                     state = 'thinking';
                     updateUI();
                     
@@ -287,7 +299,7 @@ async function stopTalking() {
                     lastReply.textContent = reply;
                     lastReply.classList.add('visible');
                     
-                    // Step 3: TTS - play voice response
+                    // Step 3: TTS
                     state = 'speaking';
                     updateUI();
                     
@@ -309,6 +321,7 @@ async function stopTalking() {
                                 updateUI();
                             };
                             currentAudio.onerror = () => {
+                                currentAudio = null;
                                 state = 'idle';
                                 updateUI();
                             };
@@ -318,11 +331,9 @@ async function stopTalking() {
                             updateUI();
                         }
                     } catch(e) {
-                        console.error('TTS error:', e);
                         state = 'idle';
                         updateUI();
                     }
-                    
                     resolve();
                 };
                 reader.readAsDataURL(blob);
@@ -345,35 +356,42 @@ function updateUI() {
     switch(state) {
         case 'idle':
             talkBtn.textContent = '🎤';
-            talkLabel.textContent = 'Presiona para hablar';
-            talkLabel.className = 'talk-label active';
+            talkBtn.style.background = '';
+            talkLabel.textContent = 'Toca para hablar';
+            connStatus.textContent = 'Toca el botón para hablar';
             break;
         case 'recording':
+            talkBtn.textContent = '⏹️';
             talkBtn.classList.add('recording');
-            talkLabel.className = 'talk-label recording';
-            talkLabel.textContent = '🔴 Grabando... suelta para enviar';
+            talkLabel.textContent = 'Grabando... toca para detener';
+            talkLabel.classList.add('recording');
+            connStatus.textContent = '🔴 Grabando';
             break;
         case 'transcribing':
             talkBtn.textContent = '✍️';
+            talkBtn.classList.add('thinking');
             talkLabel.textContent = 'Transcribiendo...';
-            talkLabel.className = 'talk-label thinking';
+            talkLabel.classList.add('thinking');
+            connStatus.textContent = '✍️ Transcribiendo';
             break;
         case 'thinking':
             talkBtn.textContent = '🧠';
             talkBtn.classList.add('thinking');
             talkLabel.textContent = 'Pensando...';
-            talkLabel.className = 'talk-label thinking';
+            talkLabel.classList.add('thinking');
+            connStatus.textContent = '🧠 Pensando';
             break;
         case 'speaking':
             talkBtn.textContent = '🔊';
             talkBtn.classList.add('speaking');
             talkLabel.textContent = 'Respondiendo...';
-            talkLabel.className = 'talk-label speaking';
+            talkLabel.classList.add('speaking');
+            connStatus.textContent = '🔊 Respondiendo';
             break;
     }
 }
 
-// ─── CHAT MODE ───
+// ─── CHAT ───
 sendBtn.onclick = sendMsg;
 msgInput.onkeydown = e => { if(e.key==='Enter') sendMsg(); };
 
@@ -394,20 +412,6 @@ function sendMsg() {
         lastReplyText = d.reply;
         lastReply.textContent = d.reply;
         lastReply.classList.add('visible');
-        
-        // Auto-play TTS in voice mode
-        if (voiceModeBtn.classList.contains('active')) {
-            fetch(SERVER_URL + '/api/tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: d.reply, voice: 'es-MX-DaliaNeural' })
-            }).then(r => r.blob()).then(blob => {
-                const url = URL.createObjectURL(blob);
-                currentAudio = new Audio(url);
-                currentAudio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; };
-                currentAudio.play();
-            }).catch(() => {});
-        }
     }).catch(() => {
         removeTyping();
         addMsg('bot', 'Error de conexión.');
@@ -419,8 +423,8 @@ function addMsg(type, text) {
     d.className = 'msg ' + type;
     const t = new Date();
     d.innerHTML = text + '<div class="time">' + t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0') + '</div>';
-    messages.appendChild(d);
-    messages.scrollTop = messages.scrollHeight;
+    messagesEl.appendChild(d);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
 function showTyping() {
@@ -429,8 +433,8 @@ function showTyping() {
     t.className = 'typing';
     t.id = 'typingIndicator';
     t.innerHTML = '<div class="typing-dots"><span>●</span><span>●</span><span>●</span></div>';
-    messages.appendChild(t);
-    messages.scrollTop = messages.scrollHeight;
+    messagesEl.appendChild(t);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 function removeTyping() { const t = document.getElementById('typingIndicator'); if(t) t.remove(); }
 
