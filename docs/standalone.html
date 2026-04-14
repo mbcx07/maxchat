@@ -8,12 +8,12 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e0e0e0; height: 100vh; height: 100dvh; overflow: hidden; user-select: none; }
 
-        /* ─── LOGIN ─── */
         .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; background: linear-gradient(180deg, #0a0a0a, #111); }
         .login-screen .avatar { font-size: 5em; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
@@ -23,78 +23,63 @@
         .login-input:focus { border-color: #00ff88; }
         .login-btn { width: 100%; max-width: 300px; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #00ff88, #00cc6a); color: #0a0a0a; font-size: 1em; font-weight: 600; cursor: pointer; }
 
-        /* ─── MAIN ─── */
         .main-screen { display: none; flex-direction: column; height: 100vh; height: 100dvh; }
         .main-screen.active { display: flex; }
 
+        /* ─── CALL SCREEN (full screen) ─── */
+        .call-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; gap: 20px; }
+        .call-avatar { font-size: 6em; }
+        .call-avatar.listening { animation: float 2s ease-in-out infinite; }
+        .call-avatar.speaking { animation: pulse-voice 0.6s ease-in-out infinite; }
+        @keyframes pulse-voice { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+        .call-status { font-size: 1.1em; color: #888; text-align: center; min-height: 1.5em; transition: all 0.3s; }
+        .call-status.listening { color: #00ff88; }
+        .call-status.recording { color: #ff4444; }
+        .call-status.thinking { color: #ffd93d; }
+        .call-status.speaking { color: #6b8aff; }
+
+        .transcript-box { max-width: 90%; padding: 10px 16px; background: #1e1e3a; border-radius: 12px; font-size: 0.85em; color: #aaa; text-align: center; min-height: 1.5em; font-style: italic; display: none; }
+        .transcript-box.visible { display: block; animation: fadeIn 0.3s ease-out; }
+        
+        .reply-box { max-width: 90%; padding: 14px 18px; background: #1e1e3a; border-left: 3px solid #00ff88; border-radius: 12px; font-size: 0.9em; color: #e0e0e0; line-height: 1.5; display: none; }
+        .reply-box.visible { display: block; animation: fadeIn 0.3s ease-out; }
+
+        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+        .wave-bars { display: flex; align-items: center; gap: 3px; height: 40px; }
+        .wave-bars .bar { width: 4px; height: 10px; background: #00ff88; border-radius: 2px; transition: height 0.1s; }
+        .wave-bars.active .bar { animation: wave 0.5s ease-in-out infinite; }
+        .wave-bars.speaking .bar { background: #6b8aff; animation: wave 0.3s ease-in-out infinite; }
+        @keyframes wave { 0%,100%{height:6px} 50%{height:30px} }
+        .wave-bars .bar:nth-child(1){animation-delay:0s} .wave-bars .bar:nth-child(2){animation-delay:.06s} .wave-bars .bar:nth-child(3){animation-delay:.12s} .wave-bars .bar:nth-child(4){animation-delay:.18s} .wave-bars .bar:nth-child(5){animation-delay:.24s} .wave-bars .bar:nth-child(6){animation-delay:.18s} .wave-bars .bar:nth-child(7){animation-delay:.12s} .wave-bars .bar:nth-child(8){animation-delay:.06s}
+
+        .call-buttons { display: flex; gap: 20px; margin-top: 20px; }
+        .call-btn-start { width: 70px; height: 70px; border-radius: 50%; border: none; background: linear-gradient(135deg, #00ff88, #00cc6a); color: #0a0a0a; font-size: 1.8em; cursor: pointer; box-shadow: 0 4px 20px #00ff8840; transition: all 0.2s; }
+        .call-btn-start:active { transform: scale(0.95); }
+        .call-btn-start.active { background: linear-gradient(135deg, #ff4444, #cc0000); box-shadow: 0 4px 20px #ff444440; }
+        
+        .call-btn-end { width: 70px; height: 70px; border-radius: 50%; border: none; background: #333; color: #888; font-size: 1.8em; cursor: not-allowed; transition: all 0.2s; }
+        .call-btn-end.active { background: linear-gradient(135deg, #ff4444, #cc0000); color: #fff; cursor: pointer; box-shadow: 0 4px 20px #ff444440; }
+
+        /* ─── CHAT MODE ─── */
+        .chat-area { display: none; flex: 1; flex-direction: column; }
+        .chat-area.active { display: flex; }
         .header { display: flex; align-items: center; padding: 12px 16px; background: #111; border-bottom: 1px solid #222; gap: 10px; }
         .header .avatar { font-size: 1.8em; }
         .header .info h2 { font-size: 1em; color: #fff; }
-        .header .info .status { font-size: 0.7em; color: #00ff88; }
-        .mode-btn { margin-left: auto; padding: 6px 14px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 0.75em; cursor: pointer; }
-        .mode-btn.active { border-color: #00ff88; color: #00ff88; background: #00ff8815; }
-
-        /* ─── VOICE (default) ─── */
-        .voice-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 20px; }
-        
-        .talk-btn {
-            width: 130px; height: 130px; border-radius: 50%; border: none;
-            background: linear-gradient(135deg, #00ff88, #00cc6a);
-            color: #0a0a0a; font-size: 3.2em; cursor: pointer;
-            box-shadow: 0 4px 20px #00ff8840;
-            transition: all 0.15s ease;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .talk-btn:active { transform: scale(0.95); }
-        .talk-btn.recording {
-            background: linear-gradient(135deg, #ff4444, #cc0000);
-            box-shadow: 0 4px 20px #ff444440;
-            animation: pulse-rec 1s infinite;
-        }
-        @keyframes pulse-rec { 0%,100%{box-shadow: 0 4px 20px #ff444440} 50%{box-shadow: 0 4px 30px #ff444480} }
-        
-        .talk-btn.thinking {
-            background: linear-gradient(135deg, #ffd93d, #f0c000);
-            box-shadow: 0 4px 20px #ffd93d40;
-            animation: spin 2s linear infinite;
-        }
-        @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-        
-        .talk-btn.speaking {
-            background: linear-gradient(135deg, #6b8aff, #4466ff);
-            box-shadow: 0 4px 20px #6b8aff40;
-            animation: pulse-speak 0.8s infinite;
-        }
-        @keyframes pulse-speak { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
-        
-        .talk-label { font-size: 0.95em; color: #888; text-align: center; min-height: 1.3em; transition: color 0.2s; }
-        .talk-label.recording { color: #ff4444; }
-        .talk-label.thinking { color: #ffd93d; }
-        .talk-label.speaking { color: #6b8aff; }
-
-        .transcript { font-size: 0.8em; color: #666; font-style: italic; text-align: center; min-height: 1em; max-width: 85%; }
-        .last-reply { max-width: 85%; padding: 12px 16px; background: #1e1e3a; border-radius: 16px; border-bottom-left-radius: 4px; font-size: 0.85em; line-height: 1.4; color: #ccc; display: none; }
-        .last-reply.visible { display: block; animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-
-        /* ─── CHAT ─── */
-        .chat-area { display: none; flex: 1; flex-direction: column; }
-        .chat-area.active { display: flex; }
+        .tab-btn { padding: 6px 14px; border: 1px solid #333; border-radius: 20px; background: transparent; color: #888; font-size: 0.75em; cursor: pointer; }
+        .tab-btn.active { border-color: #00ff88; color: #00ff88; background: #00ff8815; }
         .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
         .msg { max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 0.9em; line-height: 1.4; animation: msgIn 0.3s ease-out; word-wrap: break-word; }
         @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
         .msg.user { align-self: flex-end; background: #00ff88; color: #0a0a0a; border-bottom-right-radius: 4px; }
         .msg.bot { align-self: flex-start; background: #1e1e3a; color: #e0e0e0; border-bottom-left-radius: 4px; }
         .msg .time { font-size: 0.65em; opacity: 0.5; margin-top: 4px; }
-        .typing { align-self: flex-start; color: #666; font-size: 0.8em; padding: 8px 16px; }
-        .typing-dots span { animation: dot 1.4s infinite; opacity: 0.3; }
-        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes dot { 0%,100%{opacity:0.3} 50%{opacity:1} }
         .input-area { display: flex; align-items: center; padding: 10px 12px; background: #111; border-top: 1px solid #222; gap: 8px; }
         .input-area input { flex: 1; padding: 12px 16px; border: 1px solid #333; border-radius: 24px; background: #1a1a2e; color: #fff; font-size: 0.9em; outline: none; }
         .input-area input:focus { border-color: #00ff88; }
-        .send-btn { width: 44px; height: 44px; border: none; border-radius: 50%; background: #00ff88; color: #0a0a0a; font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .send-btn { width: 44px; height: 44px; border: none; border-radius: 50%; background: #00ff88; color: #0a0a0a; font-size: 1.1em; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -102,7 +87,7 @@
 <div class="login-screen" id="loginScreen">
     <div class="avatar">📚</div>
     <h1>MaxChat</h1>
-    <p>Habla con Max — toca para hablar</p>
+    <p>Llamada de voz con IA</p>
     <input class="login-input" id="nameInput" placeholder="Tu nombre..." maxlength="20" autofocus>
     <button class="login-btn" id="loginBtn">Entrar</button>
 </div>
@@ -110,23 +95,28 @@
 <div class="main-screen" id="mainScreen">
     <div class="header">
         <div class="avatar">📚</div>
-        <div class="info">
-            <h2>Max</h2>
-            <div class="status" id="connStatus">Toca el botón para hablar</div>
+        <div class="info"><h2>Max</h2></div>
+        <button class="tab-btn active" id="callTab">📞 Llamar</button>
+        <button class="tab-btn" id="chatTab">💬 Chat</button>
+    </div>
+
+    <!-- CALL SCREEN -->
+    <div class="call-screen" id="callScreen">
+        <div class="call-avatar" id="callAvatar">📚</div>
+        <div class="call-status" id="callStatus">Toca 📞 para llamar</div>
+        <div class="wave-bars" id="waveBars">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
         </div>
-        <button class="mode-btn active" id="voiceModeBtn">🎤</button>
-        <button class="mode-btn" id="chatModeBtn">💬</button>
+        <div class="transcript-box" id="transcriptBox"></div>
+        <div class="reply-box" id="replyBox"></div>
+        <div class="call-buttons">
+            <button class="call-btn-start" id="startCallBtn">📞</button>
+            <button class="call-btn-end" id="endCallBtn">📵</button>
+        </div>
     </div>
 
-    <!-- VOICE MODE -->
-    <div class="voice-area" id="voiceArea">
-        <div class="transcript" id="transcript"></div>
-        <button class="talk-btn" id="talkBtn">🎤</button>
-        <div class="talk-label" id="talkLabel">Toca para hablar</div>
-        <div class="last-reply" id="lastReply"></div>
-    </div>
-
-    <!-- CHAT MODE -->
+    <!-- CHAT SCREEN -->
     <div class="chat-area" id="chatArea">
         <div class="messages" id="messages"></div>
         <div class="input-area">
@@ -139,29 +129,36 @@
 <script>
 const SERVER_URL = window.location.origin;
 let userName = '';
-let state = 'idle'; // idle, recording, transcribing, thinking, speaking
+let socket = null;
+let inCall = false;
 let mediaStream = null;
 let mediaRecorder = null;
-let audioChunks = [];
+let audioProcessor = null;
+let audioContext = null;
+let analyser = null;
+let silenceTimer = null;
+let isSpeaking = false;
+let chunkCount = 0;
 let currentAudio = null;
-let lastReplyText = '';
 
 const loginScreen = document.getElementById('loginScreen');
 const mainScreen = document.getElementById('mainScreen');
 const nameInput = document.getElementById('nameInput');
 const loginBtn = document.getElementById('loginBtn');
-const talkBtn = document.getElementById('talkBtn');
-const talkLabel = document.getElementById('talkLabel');
-const transcript = document.getElementById('transcript');
-const lastReply = document.getElementById('lastReply');
-const voiceArea = document.getElementById('voiceArea');
+const callScreen = document.getElementById('callScreen');
 const chatArea = document.getElementById('chatArea');
+const callTab = document.getElementById('callTab');
+const chatTab = document.getElementById('chatTab');
+const callAvatar = document.getElementById('callAvatar');
+const callStatus = document.getElementById('callStatus');
+const waveBars = document.getElementById('waveBars');
+const transcriptBox = document.getElementById('transcriptBox');
+const replyBox = document.getElementById('replyBox');
+const startCallBtn = document.getElementById('startCallBtn');
+const endCallBtn = document.getElementById('endCallBtn');
 const messagesEl = document.getElementById('messages');
 const msgInput = document.getElementById('msgInput');
 const sendBtn = document.getElementById('sendBtn');
-const voiceModeBtn = document.getElementById('voiceModeBtn');
-const chatModeBtn = document.getElementById('chatModeBtn');
-const connStatus = document.getElementById('connStatus');
 
 // ─── LOGIN ───
 loginBtn.onclick = () => {
@@ -176,218 +173,223 @@ nameInput.onkeydown = e => { if(e.key==='Enter') loginBtn.click(); };
 const saved = localStorage.getItem('maxchat_user');
 if (saved) { nameInput.value = saved; loginBtn.click(); }
 
-// ─── MODE TOGGLE ───
-voiceModeBtn.onclick = () => {
-    voiceModeBtn.classList.add('active');
-    chatModeBtn.classList.remove('active');
-    voiceArea.style.display = 'flex';
-    chatArea.classList.remove('active');
+// ─── TABS ───
+callTab.onclick = () => {
+    callTab.classList.add('active'); chatTab.classList.remove('active');
+    callScreen.style.display = 'flex'; chatArea.classList.remove('active');
 };
-chatModeBtn.onclick = () => {
-    chatModeBtn.classList.add('active');
-    voiceModeBtn.classList.remove('active');
-    chatArea.classList.add('active');
-    voiceArea.style.display = 'none';
+chatTab.onclick = () => {
+    chatTab.classList.add('active'); callTab.classList.remove('active');
+    chatArea.classList.add('active'); callScreen.style.display = 'none';
+    if (inCall) endCall();
 };
 
-// ─── VOICE: TAP ONCE TO RECORD ───
-// Tap starts recording, auto-stops after 10s or tap again to stop early
-talkBtn.onclick = async () => {
-    if (state === 'idle') {
-        await startRecording();
-    } else if (state === 'recording') {
-        await stopRecordingAndProcess();
-    }
-    // If thinking/transcribing/speaking, ignore taps
-};
-
-async function startRecording() {
-    // Stop any playing audio
-    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+// ─── SOCKET.IO ───
+function connectSocket() {
+    socket = io(SERVER_URL, { transports: ['websocket','polling'], timeout: 10000 });
+    socket.on('connect', () => { socket.emit('user:join', userName); });
     
-    try {
-        if (!mediaStream) {
-            mediaStream = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-            });
+    socket.on('voice:call-started', () => {
+        callStatus.textContent = '🎤 Escuchando...';
+        callStatus.className = 'call-status listening';
+        waveBars.className = 'wave-bars active';
+        callAvatar.className = 'call-avatar listening';
+    });
+    
+    socket.on('voice:status', (data) => {
+        callStatus.textContent = data.text || '';
+        const s = data.status;
+        if (s === 'listening') {
+            callStatus.className = 'call-status listening';
+            waveBars.className = 'wave-bars active';
+            callAvatar.className = 'call-avatar listening';
+            startRecording(); // Resume recording after AI finishes
+        } else if (s === 'transcribing') {
+            callStatus.className = 'call-status thinking';
+            waveBars.className = 'wave-bars';
+            callAvatar.className = 'call-avatar';
+        } else if (s === 'thinking') {
+            callStatus.className = 'call-status thinking';
+            waveBars.className = 'wave-bars';
+            callAvatar.className = 'call-avatar';
+        } else if (s === 'speaking') {
+            callStatus.className = 'call-status speaking';
+            waveBars.className = 'wave-bars speaking';
+            callAvatar.className = 'call-avatar speaking';
+            stopRecording(); // Stop recording while AI speaks
         }
-        
-        audioChunks = [];
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-        mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
-        
-        mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) audioChunks.push(e.data);
-        };
-        
-        mediaRecorder.start();
-        state = 'recording';
-        updateUI();
-        
-        // Auto-stop after 10 seconds
-        setTimeout(() => {
-            if (state === 'recording') stopRecordingAndProcess();
-        }, 10000);
-        
-    } catch(e) {
-        alert('Micrófono: ' + e.message);
-    }
-}
-
-async function stopRecordingAndProcess() {
-    if (state !== 'recording' || !mediaRecorder || mediaRecorder.state !== 'recording') {
-        state = 'idle';
-        updateUI();
-        return;
-    }
+    });
     
-    return new Promise((resolve) => {
-        mediaRecorder.onstop = async () => {
-            const mimeType = audioChunks.length > 0 ? audioChunks[0].type || 'audio/webm' : 'audio/webm';
-            const blob = new Blob(audioChunks, { type: mimeType });
-            audioChunks = [];
-            
-            if (blob.size < 500) {
-                state = 'idle';
-                updateUI();
-                transcript.textContent = 'Muy corto. Intenta de nuevo.';
-                resolve();
-                return;
-            }
-            
-            // Step 1: Transcribe
-            state = 'transcribing';
-            updateUI();
-            
-            try {
-                const reader = new FileReader();
-                reader.onloadend = async () => {
-                    const b64 = reader.result.split(',')[1];
-                    
-                    const trRes = await fetch(SERVER_URL + '/api/transcribe', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ audio: b64 })
-                    });
-                    const trData = await trRes.json();
-                    const userText = (trData.text || '').trim();
-                    
-                    if (!userText) {
-                        state = 'idle';
-                        updateUI();
-                        transcript.textContent = 'No detecté voz. Toca de nuevo.';
-                        resolve();
-                        return;
-                    }
-                    
-                    transcript.textContent = '🎙️ "' + userText + '"';
-                    addMsg('user', '🎙️ ' + userText);
-                    
-                    // Step 2: AI
-                    state = 'thinking';
-                    updateUI();
-                    
-                    const chatRes = await fetch(SERVER_URL + '/api/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: userText, username: userName })
-                    });
-                    const chatData = await chatRes.json();
-                    const reply = chatData.reply || 'Sin respuesta';
-                    lastReplyText = reply;
-                    addMsg('bot', reply);
-                    lastReply.textContent = reply;
-                    lastReply.classList.add('visible');
-                    
-                    // Step 3: TTS
-                    state = 'speaking';
-                    updateUI();
-                    
-                    try {
-                        const ttsRes = await fetch(SERVER_URL + '/api/tts', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ text: reply, voice: 'es-MX-DaliaNeural' })
-                        });
-                        
-                        if (ttsRes.ok) {
-                            const audioBlob = await ttsRes.blob();
-                            const audioUrl = URL.createObjectURL(audioBlob);
-                            currentAudio = new Audio(audioUrl);
-                            currentAudio.onended = () => {
-                                currentAudio = null;
-                                URL.revokeObjectURL(audioUrl);
-                                state = 'idle';
-                                updateUI();
-                            };
-                            currentAudio.onerror = () => {
-                                currentAudio = null;
-                                state = 'idle';
-                                updateUI();
-                            };
-                            await currentAudio.play();
-                        } else {
-                            state = 'idle';
-                            updateUI();
-                        }
-                    } catch(e) {
-                        state = 'idle';
-                        updateUI();
-                    }
-                    resolve();
-                };
-                reader.readAsDataURL(blob);
-            } catch(e) {
-                console.error('Voice error:', e);
-                state = 'idle';
-                updateUI();
-                resolve();
-            }
-        };
-        
-        mediaRecorder.stop();
+    socket.on('voice:transcript', (data) => {
+        transcriptBox.textContent = '🎙️ ' + data.text;
+        transcriptBox.classList.add('visible');
+        addMsg('user', '🎙️ ' + data.text);
+    });
+    
+    socket.on('voice:reply', (data) => {
+        replyBox.textContent = data.text;
+        replyBox.classList.add('visible');
+        addMsg('bot', data.text);
+    });
+    
+    socket.on('voice:audio', (data) => {
+        if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+        const audio = new Audio('data:audio/mp3;base64,' + data.audio);
+        currentAudio = audio;
+        audio.onended = () => { currentAudio = null; };
+        audio.play().catch(e => console.error('Audio play error:', e));
+    });
+    
+    socket.on('voice:call-ended', () => {
+        inCall = false;
+        callStatus.textContent = 'Toca 📞 para llamar';
+        callStatus.className = 'call-status';
+        waveBars.className = 'wave-bars';
+        callAvatar.className = 'call-avatar';
+        transcriptBox.classList.remove('visible');
+        replyBox.classList.remove('visible');
+        startCallBtn.textContent = '📞';
+        startCallBtn.className = 'call-btn-start';
+        endCallBtn.className = 'call-btn-end';
+    });
+    
+    socket.on('chat:reply', (data) => {
+        addMsg('bot', data.text || data.reply);
     });
 }
 
-function updateUI() {
-    talkBtn.className = 'talk-btn';
-    talkLabel.className = 'talk-label';
+// ─── VOICE CALL ───
+startCallBtn.onclick = startCall;
+endCallBtn.onclick = endCall;
+
+async function startCall() {
+    if (inCall) return;
+    inCall = true;
+    startCallBtn.className = 'call-btn-start active';
+    startCallBtn.textContent = '📞';
+    endCallBtn.className = 'call-btn-end active';
+    callStatus.textContent = '🎤 Conectando...';
+    transcriptBox.classList.remove('visible');
+    replyBox.classList.remove('visible');
     
-    switch(state) {
-        case 'idle':
-            talkBtn.textContent = '🎤';
-            talkBtn.style.background = '';
-            talkLabel.textContent = 'Toca para hablar';
-            connStatus.textContent = 'Toca el botón para hablar';
-            break;
-        case 'recording':
-            talkBtn.textContent = '⏹️';
-            talkBtn.classList.add('recording');
-            talkLabel.textContent = 'Grabando... toca para detener';
-            talkLabel.classList.add('recording');
-            connStatus.textContent = '🔴 Grabando';
-            break;
-        case 'transcribing':
-            talkBtn.textContent = '✍️';
-            talkBtn.classList.add('thinking');
-            talkLabel.textContent = 'Transcribiendo...';
-            talkLabel.classList.add('thinking');
-            connStatus.textContent = '✍️ Transcribiendo';
-            break;
-        case 'thinking':
-            talkBtn.textContent = '🧠';
-            talkBtn.classList.add('thinking');
-            talkLabel.textContent = 'Pensando...';
-            talkLabel.classList.add('thinking');
-            connStatus.textContent = '🧠 Pensando';
-            break;
-        case 'speaking':
-            talkBtn.textContent = '🔊';
-            talkBtn.classList.add('speaking');
-            talkLabel.textContent = 'Respondiendo...';
-            talkLabel.classList.add('speaking');
-            connStatus.textContent = '🔊 Respondiendo';
-            break;
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }
+        });
+        
+        if (!socket || !socket.connected) connectSocket();
+        socket.emit('voice:start-call');
+        
+        // Start recording and silence detection
+        startRecording();
+        startSilenceDetection();
+        
+    } catch(e) {
+        alert('Micrófono: ' + e.message);
+        endCall();
+    }
+}
+
+function startRecording() {
+    if (!mediaStream || !inCall) return;
+    
+    // Stop previous recorder if any
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    
+    chunkCount = 0;
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+    
+    mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0 && inCall) {
+            // Convert chunk to base64 and send
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const b64 = reader.result.split(',')[1];
+                if (socket && socket.connected) {
+                    socket.emit('voice:audio-chunk', b64);
+                }
+            };
+            reader.readAsDataURL(e.data);
+        }
+    };
+    
+    // Send chunks every 500ms for real-time streaming
+    mediaRecorder.start(500);
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+}
+
+function startSilenceDetection() {
+    if (!mediaStream || !inCall) return;
+    
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioContext.createMediaStreamSource(mediaStream);
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    source.connect(analyser);
+    
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    let speaking = false;
+    let silenceStart = Date.now();
+    let speechChunks = 0;
+    
+    function detect() {
+        if (!inCall) return;
+        
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const avg = sum / dataArray.length;
+        
+        const isSpeakingNow = avg > 15; // Threshold
+        
+        if (isSpeakingNow) {
+            if (!speaking) {
+                speaking = true;
+                silenceStart = Date.now();
+                callStatus.textContent = '🎤 Te escucho...';
+                callStatus.className = 'call-status recording';
+                waveBars.className = 'wave-bars active';
+            }
+            silenceStart = Date.now();
+        } else if (speaking) {
+            // Silence detected after speech
+            if (Date.now() - silenceStart > 1500) {
+                // 1.5 seconds of silence = end of utterance
+                speaking = false;
+                callStatus.textContent = 'Procesando...';
+                callStatus.className = 'call-status thinking';
+                waveBars.className = 'wave-bars';
+                // Tell server to process accumulated audio
+                if (socket && socket.connected) {
+                    socket.emit('voice:end-utterance');
+                }
+            }
+        }
+        
+        requestAnimationFrame(detect);
+    }
+    
+    detect();
+}
+
+function endCall() {
+    inCall = false;
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    stopRecording();
+    
+    if (audioContext) { audioContext.close(); audioContext = null; }
+    if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+    
+    if (socket && socket.connected) {
+        socket.emit('voice:end-call');
     }
 }
 
@@ -400,22 +402,9 @@ function sendMsg() {
     if (!text) return;
     addMsg('user', text);
     msgInput.value = '';
-    showTyping();
     
-    fetch(SERVER_URL + '/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, username: userName })
-    }).then(r => r.json()).then(d => {
-        removeTyping();
-        addMsg('bot', d.reply || 'Sin respuesta');
-        lastReplyText = d.reply;
-        lastReply.textContent = d.reply;
-        lastReply.classList.add('visible');
-    }).catch(() => {
-        removeTyping();
-        addMsg('bot', 'Error de conexión.');
-    });
+    if (!socket || !socket.connected) connectSocket();
+    socket.emit('chat:message', { message: text });
 }
 
 function addMsg(type, text) {
@@ -427,16 +416,8 @@ function addMsg(type, text) {
     messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function showTyping() {
-    removeTyping();
-    const t = document.createElement('div');
-    t.className = 'typing';
-    t.id = 'typingIndicator';
-    t.innerHTML = '<div class="typing-dots"><span>●</span><span>●</span><span>●</span></div>';
-    messagesEl.appendChild(t);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-function removeTyping() { const t = document.getElementById('typingIndicator'); if(t) t.remove(); }
+// Auto-connect
+setTimeout(() => { if (!socket) connectSocket(); }, 500);
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
