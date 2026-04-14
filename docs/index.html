@@ -1,21 +1,450 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0a0a0f" />
-    <meta name="description" content="MaxChat - Chat y llamada de voz con IA" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="MaxChat" />
-    <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>MaxChat</title>
-    <script type="module" crossorigin src="/assets/index-DdLqACsw.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-DyyIAzpz.css">
-  </head>
-  <body class="bg-[#0a0a0f] text-white overflow-hidden">
-    <div id="root"></div>
-  </body>
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0a0a; color: #e0e0e0; height: 100vh; height: 100dvh; overflow: hidden; }
+
+        .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; background: linear-gradient(180deg, #0a0a0a 0%, #111827 100%); }
+        .login-screen .avatar { font-size: 5em; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .login-screen h1 { font-size: 2em; color: #00ff88; margin-bottom: 5px; }
+        .login-screen p { color: #666; margin-bottom: 30px; font-size: 0.9em; text-align: center; }
+        .login-input { width: 100%; max-width: 300px; padding: 14px 18px; border: 2px solid #333; border-radius: 12px; background: #1a1a2e; color: #fff; font-size: 1em; outline: none; margin-bottom: 15px; transition: border-color 0.3s; }
+        .login-input:focus { border-color: #00ff88; }
+        .login-btn { width: 100%; max-width: 300px; padding: 14px; border: none; border-radius: 12px; background: linear-gradient(135deg, #00ff88, #00cc6a); color: #0a0a0a; font-size: 1em; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        .login-btn:active { transform: scale(0.98); }
+
+        .chat-screen { display: none; flex-direction: column; height: 100vh; height: 100dvh; }
+        .chat-screen.active { display: flex; }
+        .chat-header { display: flex; align-items: center; padding: 12px 16px; background: #111; border-bottom: 1px solid #222; gap: 12px; }
+        .chat-header .avatar-sm { font-size: 2em; }
+        .chat-header .info h2 { font-size: 1em; color: #fff; }
+        .chat-header .info .status { font-size: 0.75em; color: #00ff88; display: flex; align-items: center; gap: 4px; }
+        .chat-header .info .status .dot { width: 6px; height: 6px; background: #00ff88; border-radius: 50%; display: inline-block; }
+        .chat-header .info .status.offline .dot { background: #666; }
+        .chat-header .info .status.offline { color: #666; }
+        .call-btn { margin-left: auto; width: 44px; height: 44px; border: none; border-radius: 50%; background: #00ff88; color: #0a0a0a; font-size: 1.2em; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .call-btn:hover { box-shadow: 0 0 15px #00ff88; transform: scale(1.1); }
+        .call-btn.active { background: #ff4444; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+        .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
+        .msg { max-width: 80%; padding: 10px 14px; border-radius: 16px; font-size: 0.9em; line-height: 1.4; animation: msgIn 0.3s ease-out; word-wrap: break-word; }
+        @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .msg.user { align-self: flex-end; background: #00ff88; color: #0a0a0a; border-bottom-right-radius: 4px; }
+        .msg.bot { align-self: flex-start; background: #1e1e3a; color: #e0e0e0; border-bottom-left-radius: 4px; }
+        .msg .time { font-size: 0.65em; opacity: 0.5; margin-top: 4px; }
+        .typing { align-self: flex-start; color: #666; font-size: 0.8em; padding: 8px 16px; }
+        .typing-dots span { animation: dot 1.4s infinite; opacity: 0.3; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dot { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+        .input-area { display: flex; align-items: center; padding: 10px 12px; background: #111; border-top: 1px solid #222; gap: 8px; }
+        .input-area input { flex: 1; padding: 12px 16px; border: 1px solid #333; border-radius: 24px; background: #1a1a2e; color: #fff; font-size: 0.9em; outline: none; }
+        .input-area input:focus { border-color: #00ff88; }
+        .send-btn { width: 44px; height: 44px; border: none; border-radius: 50%; background: #00ff88; color: #0a0a0a; font-size: 1.1em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        /* VOICE CALL OVERLAY */
+        .voice-overlay { display: none; position: fixed; top:0;left:0;right:0;bottom:0; background: linear-gradient(180deg,#0a0a0a 0%,#1a1a2e 100%); flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        .voice-overlay.active { display: flex; }
+        .voice-overlay .avatar-lg { font-size: 8em; animation: float 2s ease-in-out infinite; }
+        .voice-overlay h2 { color: #fff; font-size: 1.5em; margin: 10px 0 5px; }
+        .voice-overlay .status-text { color: #00ff88; font-size: 0.9em; margin-bottom: 30px; min-height: 1.2em; }
+        .voice-waves { display: flex; align-items: center; gap: 4px; height: 50px; margin-bottom: 40px; }
+        .voice-waves .bar { width: 5px; height: 10px; background: #00ff88; border-radius: 3px; transition: height 0.15s ease; }
+        .voice-waves.listening .bar { animation: wave 0.6s ease-in-out infinite; }
+        .voice-waves.speaking .bar { animation: wave 0.4s ease-in-out infinite; background: #ff6b6b; }
+        @keyframes wave { 0%,100%{height:8px} 50%{height:35px} }
+        .voice-waves .bar:nth-child(1){animation-delay:0s} .voice-waves .bar:nth-child(2){animation-delay:.08s} .voice-waves .bar:nth-child(3){animation-delay:.16s} .voice-waves .bar:nth-child(4){animation-delay:.24s} .voice-waves .bar:nth-child(5){animation-delay:.32s} .voice-waves .bar:nth-child(6){animation-delay:.24s} .voice-waves .bar:nth-child(7){animation-delay:.16s} .voice-waves .bar:nth-child(8){animation-delay:.08s}
+        .end-call-btn { width: 70px; height: 70px; border: none; border-radius: 50%; background: #ff4444; color: #fff; font-size: 1.5em; cursor: pointer; transition: transform 0.2s; }
+        .end-call-btn:active { transform: scale(0.95); }
+        .transcript-preview { color: #aaa; font-size: 0.8em; max-width: 80%; text-align: center; margin-top: 10px; font-style: italic; }
+
+        .conn-error { background: #ff4444; color: #fff; padding: 8px 16px; text-align: center; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+<div class="login-screen" id="loginScreen">
+    <div class="avatar">📚</div>
+    <h1>MaxChat</h1>
+    <p>Habla con Max por chat o llamada de voz</p>
+    <input class="login-input" id="nameInput" placeholder="Tu nombre..." maxlength="20" autofocus>
+    <button class="login-btn" id="loginBtn">Entrar</button>
+</div>
+
+<div class="chat-screen" id="chatScreen">
+    <div class="chat-header">
+        <div class="avatar-sm">📚</div>
+        <div class="info">
+            <h2>Max</h2>
+            <div class="status" id="connStatus"><span class="dot"></span> <span id="connText">Conectando...</span></div>
+        </div>
+        <button class="call-btn" id="callBtn" title="Llamar">📞</button>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+        <input id="msgInput" placeholder="Escribe un mensaje...">
+        <button class="send-btn" id="sendBtn">➤</button>
+    </div>
+</div>
+
+<div class="voice-overlay" id="voiceOverlay">
+    <div class="avatar-lg">📚</div>
+    <h2>Max</h2>
+    <div class="status-text" id="voiceStatus">Conectando...</div>
+    <div class="voice-waves" id="voiceWaves"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+    <div class="transcript-preview" id="transcriptPreview"></div>
+    <button class="end-call-btn" id="endCallBtn">📵</button>
+</div>
+
+<script>
+// Configuration - empty string means same origin (works with Cloudflare tunnel)
+const SERVER_URL = window.location.origin;
+let userName = '';
+let isInCall = false;
+let socket = null;
+let mediaRecorder = null;
+let mediaStream = null;
+let audioChunks = [];
+let currentAudio = null;
+
+const loginScreen = document.getElementById('loginScreen');
+const chatScreen = document.getElementById('chatScreen');
+const nameInput = document.getElementById('nameInput');
+const loginBtn = document.getElementById('loginBtn');
+const messagesEl = document.getElementById('messages');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const callBtn = document.getElementById('callBtn');
+const voiceOverlay = document.getElementById('voiceOverlay');
+const voiceStatus = document.getElementById('voiceStatus');
+const voiceWaves = document.getElementById('voiceWaves');
+const transcriptPreview = document.getElementById('transcriptPreview');
+const endCallBtn = document.getElementById('endCallBtn');
+const connStatus = document.getElementById('connStatus');
+const connText = document.getElementById('connText');
+
+// ─── LOGIN ───
+loginBtn.onclick = () => {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    userName = name;
+    localStorage.setItem('maxchat_user', name);
+    loginScreen.style.display = 'none';
+    chatScreen.classList.add('active');
+    connectSocket();
+    addMsg('bot', '¡Hola ' + userName + '! 👋 Soy Max. Escríbeme o presiona 📞 para llamarme por voz.');
+};
+nameInput.onkeydown = e => { if(e.key==='Enter') loginBtn.click(); };
+
+const saved = localStorage.getItem('maxchat_user');
+if (saved) { nameInput.value = saved; loginBtn.click(); }
+
+// ─── SOCKET.IO ───
+function connectSocket() {
+    socket = io(SERVER_URL, { transports: ['websocket','polling'], timeout: 10000 });
+    
+    socket.on('connect', () => {
+        socket.emit('user:join', userName);
+        connStatus.classList.remove('offline');
+        connText.textContent = 'En línea';
+    });
+    
+    socket.on('disconnect', () => {
+        connStatus.classList.add('offline');
+        connText.textContent = 'Desconectado';
+    });
+    
+    socket.on('chat:reply', (data) => {
+        removeTyping();
+        addMsg('bot', data.text || data.reply || data.message);
+    });
+    
+    socket.on('voice:status', (data) => {
+        voiceStatus.textContent = data.text || data.status;
+        voiceWaves.className = 'voice-waves';
+        if (data.status === 'listening') voiceWaves.classList.add('listening');
+        if (data.status === 'speaking') voiceWaves.classList.add('speaking');
+    });
+    
+    socket.on('voice:transcript', (data) => {
+        transcriptPreview.textContent = '🎙️ "' + data.text + '"';
+        addMsg('user', '🎙️ ' + data.text);
+    });
+    
+    socket.on('voice:reply', (data) => {
+        addMsg('bot', data.text);
+    });
+    
+    socket.on('voice:audio', (data) => {
+        playVoiceAudio(data.audio);
+        voiceStatus.textContent = '🔊 Reproduciendo...';
+        voiceWaves.className = 'voice-waves speaking';
+    });
+}
+
+// ─── TEXT CHAT ───
+sendBtn.onclick = sendMsg;
+msgInput.onkeydown = e => { if(e.key==='Enter') sendMsg(); };
+
+function sendMsg() {
+    const text = msgInput.value.trim();
+    if (!text) return;
+    addMsg('user', text);
+    msgInput.value = '';
+    showTyping();
+    
+    if (socket && socket.connected) {
+        socket.emit('chat:message', { message: text });
+    } else {
+        // Fallback to REST
+        fetch(SERVER_URL + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text, username: userName })
+        }).then(r => r.json()).then(d => {
+            removeTyping();
+            addMsg('bot', d.reply || 'Sin respuesta');
+        }).catch(() => {
+            removeTyping();
+            addMsg('bot', 'Error de conexión. Intenta de nuevo.');
+        });
+    }
+}
+
+function addMsg(type, text) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + type;
+    const t = new Date();
+    d.innerHTML = text + '<div class="time">' + t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0') + '</div>';
+    messagesEl.appendChild(d);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function showTyping() {
+    removeTyping();
+    const tip = document.createElement('div');
+    tip.className = 'typing';
+    tip.id = 'typingIndicator';
+    tip.innerHTML = '<div class="typing-dots"><span>●</span><span>●</span><span>●</span></div>';
+    messagesEl.appendChild(tip);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function removeTyping() {
+    const t = document.getElementById('typingIndicator');
+    if (t) t.remove();
+}
+
+// ─── VOICE CALL ───
+callBtn.onclick = startCall;
+endCallBtn.onclick = endCall;
+
+async function startCall() {
+    if (isInCall) return;
+    isInCall = true;
+    callBtn.classList.add('active');
+    voiceOverlay.classList.add('active');
+    voiceStatus.textContent = '🎤 Conectando micrófono...';
+    voiceWaves.className = 'voice-waves';
+    transcriptPreview.textContent = '';
+    audioChunks = [];
+    
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
+        
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+        mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+        
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        
+        if (socket && socket.connected) {
+            // Socket.io real-time mode
+            socket.emit('voice:start');
+            
+            // Record in chunks and send periodically for real-time feel
+            mediaRecorder.start(3000); // Send every 3 seconds
+            
+            mediaRecorder.onstop = async () => {
+                if (audioChunks.length > 0 && isInCall) {
+                    const blob = new Blob(audioChunks, { type: mimeType });
+                    audioChunks = [];
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const b64 = reader.result.split(',')[1];
+                        socket.emit('voice:audio', b64);
+                    };
+                    reader.readAsDataURL(blob);
+                    // Restart recording
+                    if (isInCall) {
+                        audioChunks = [];
+                        mediaRecorder.start(3000);
+                    }
+                }
+            };
+            
+            voiceStatus.textContent = '🎤 Habla ahora...';
+            voiceWaves.classList.add('listening');
+            
+        } else {
+            // REST fallback - record, stop, process
+            mediaRecorder.start();
+            voiceStatus.textContent = '🎤 Habla ahora... (presiona 📵 cuando termines)';
+            voiceWaves.classList.add('listening');
+        }
+    } catch(e) {
+        alert('No se pudo acceder al micrófono: ' + e.message);
+        endCall();
+    }
+}
+
+function endCall() {
+    if (!isInCall) return;
+    isInCall = false;
+    
+    const wasRecording = mediaRecorder && mediaRecorder.state === 'recording';
+    
+    if (socket && socket.connected && wasRecording) {
+        // Stop recording, send final chunk via socket
+        mediaRecorder.onstop = async () => {
+            if (audioChunks.length > 0) {
+                const mimeType = audioChunks[0].type || 'audio/webm';
+                const blob = new Blob(audioChunks, { type: mimeType });
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const b64 = reader.result.split(',')[1];
+                    socket.emit('voice:audio', b64);
+                    socket.emit('voice:stop');
+                };
+                reader.readAsDataURL(blob);
+            } else {
+                socket.emit('voice:stop');
+            }
+            cleanupCall();
+        };
+        mediaRecorder.stop();
+    } else if (wasRecording) {
+        // REST fallback
+        mediaRecorder.onstop = async () => {
+            if (audioChunks.length > 0) {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                voiceStatus.textContent = '🧠 Procesando...';
+                voiceWaves.className = 'voice-waves';
+                
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    const b64 = reader.result.split(',')[1];
+                    try {
+                        // Transcribe
+                        const tr = await fetch(SERVER_URL + '/api/transcribe', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ audio: b64 })
+                        });
+                        const td = await tr.json();
+                        const userText = td.text || '';
+                        if (userText.trim()) {
+                            addMsg('user', '🎙️ ' + userText);
+                            voiceStatus.textContent = '💭 Pensando...';
+                            
+                            // Get AI response
+                            const cr = await fetch(SERVER_URL + '/api/chat', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ message: userText, username: userName })
+                            });
+                            const cd = await cr.json();
+                            const reply = cd.reply || 'Sin respuesta';
+                            addMsg('bot', reply);
+                            
+                            // TTS
+                            voiceStatus.textContent = '🔊 Reproduciendo...';
+                            voiceWaves.className = 'voice-waves speaking';
+                            const ttsr = await fetch(SERVER_URL + '/api/tts', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ text: reply, voice: 'es-MX-DaliaNeural' })
+                            });
+                            if (ttsr.ok) {
+                                const ab = await ttsr.blob();
+                                playVoiceAudioBlob(ab);
+                            }
+                        }
+                    } catch(e) {
+                        console.error('Voice error:', e);
+                    }
+                    cleanupCall();
+                };
+                reader.readAsDataURL(blob);
+            } else {
+                cleanupCall();
+            }
+        };
+        mediaRecorder.stop();
+    } else {
+        cleanupCall();
+    }
+}
+
+function cleanupCall() {
+    if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+    mediaRecorder = null;
+    mediaStream = null;
+    audioChunks = [];
+    callBtn.classList.remove('active');
+    voiceOverlay.classList.remove('active');
+}
+
+function playVoiceAudio(base64) {
+    try {
+        if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+        const audio = new Audio('data:audio/mp3;base64,' + base64);
+        currentAudio = audio;
+        audio.onended = () => {
+            currentAudio = null;
+            if (isInCall) {
+                voiceStatus.textContent = '🎤 Escuchando...';
+                voiceWaves.className = 'voice-waves listening';
+            }
+        };
+        audio.play().catch(e => console.error('Audio play error:', e));
+    } catch(e) { console.error('Audio error:', e); }
+}
+
+function playVoiceAudioBlob(blob) {
+    try {
+        if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        currentAudio = audio;
+        audio.onended = () => {
+            currentAudio = null;
+            URL.revokeObjectURL(url);
+            if (isInCall) {
+                voiceStatus.textContent = '🎤 Escuchando...';
+                voiceWaves.className = 'voice-waves listening';
+            }
+        };
+        audio.play().catch(e => console.error('Audio play error:', e));
+    } catch(e) { console.error('Audio error:', e); }
+}
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
 </html>
