@@ -14,28 +14,19 @@ export default function ChatInput({ onSend, disabled }) {
     }
   }
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit(e)
-    }
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="flex items-end gap-2 px-3 pb-3 pt-2">
-      <div className="flex-1 relative">
-        <textarea
-          ref={inputRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Escribe un mensaje..."
-          rows={1}
-          disabled={disabled}
-          className="w-full px-4 py-3 bg-[#111118] border border-[#222] rounded-2xl text-white placeholder-[#555] focus:outline-none focus:border-[#00ff88]/30 resize-none text-[15px] leading-tight max-h-32 disabled:opacity-50"
-          style={{ minHeight: '44px' }}
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="flex items-end gap-2">
+      <textarea
+        ref={inputRef}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e) } }}
+        placeholder="Escribe un mensaje..."
+        rows={1}
+        disabled={disabled}
+        className="flex-1 px-4 py-3 bg-[#111118] border border-[#222] rounded-2xl text-white placeholder-[#555] focus:outline-none focus:border-[#00ff88]/30 resize-none text-[15px] leading-tight max-h-32 disabled:opacity-50"
+        style={{ minHeight: '44px' }}
+      />
       <button
         type="submit"
         disabled={!text.trim() || disabled}

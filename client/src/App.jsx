@@ -6,38 +6,19 @@ import { useVoiceRecognition } from './hooks/useVoiceRecognition'
 
 export default function App() {
   const [username, setUsername] = useState(() => localStorage.getItem('maxchat_user') || '')
-  
+
   const {
-    connected,
-    messages,
-    isTyping,
-    voiceStatus,
-    joinUser,
-    sendMessage,
-    startVoice,
-    sendVoiceAudio,
-    stopVoice,
+    connected, messages, isTyping, voiceStatus,
+    joinUser, sendMessage, startVoice, sendVoiceAudio, stopVoice,
   } = useSocket()
 
-  const {
-    isRecording,
-    startRecording,
-    stopRecording,
-  } = useVoiceRecognition()
+  const { isRecording, startRecording, stopRecording } = useVoiceRecognition()
 
   useEffect(() => {
-    if (username) {
-      joinUser(username)
-    }
+    if (username) joinUser(username)
   }, [username, joinUser])
 
-  const handleLogin = (name) => {
-    setUsername(name)
-  }
-
-  if (!username) {
-    return <Login onLogin={handleLogin} />
-  }
+  if (!username) return <Login onLogin={(name) => setUsername(name)} />
 
   return (
     <Chat

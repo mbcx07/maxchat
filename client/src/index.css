@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  --accent: #00ff88;
+  --accent-dark: #00cc6a;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #111118;
+  --bg-chat: #0d0d14;
+  --bg-bubble-user: #00ff8820;
+  --bg-bubble-ai: #1a1a2e;
+  --text-primary: #e4e4e7;
+  --text-secondary: #8888a0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+  height: 100dvh;
+  width: 100vw;
+}
+
+#root {
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes wave {
+  0%, 100% { height: 8px; }
+  50% { height: 24px; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.3s ease-out;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+.voice-pulse {
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+.wave-bar {
+  animation: wave 1s ease-in-out infinite;
+}
+
+.bubble-user {
+  background: linear-gradient(135deg, #00ff8818, #00ff8825);
+  border: 1px solid #00ff8830;
+  border-radius: 18px 18px 4px 18px;
+}
+
+.bubble-ai {
+  background: var(--bg-bubble-ai);
+  border: 1px solid #ffffff08;
+  border-radius: 18px 18px 18px 4px;
+}
+
+.glow-green {
+  box-shadow: 0 0 20px #00ff8840, 0 0 60px #00ff8815;
+}
+
+.text-glow {
+  text-shadow: 0 0 20px #00ff8840;
+}
