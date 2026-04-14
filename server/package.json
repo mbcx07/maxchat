@@ -1,0 +1,17 @@
+{
+  "name": "maxchat-server",
+  "version": "1.0.0",
+  "description": "MaxChat Backend - Socket.io + Express + WebRTC Voice",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "socket.io": "^4.8.0",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0",
+    "form-data": "^4.0.0"
+  }
+}

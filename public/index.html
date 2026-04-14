@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>MaxChat</title>
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* LOGIN */
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+        }
+        .login-screen .avatar {
+            font-size: 5em;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+        .login-screen h1 {
+            font-size: 2em;
+            color: #00ff88;
+            margin-bottom: 5px;
+        }
+        .login-screen p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        .login-input {
+            width: 100%;
+            max-width: 300px;
+            padding: 14px 18px;
+            border: 2px solid #333;
+            border-radius: 12px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 1em;
+            outline: none;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        .login-input:focus { border-color: #00ff88; }
+        .login-btn {
+            width: 100%;
+            max-width: 300px;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #0a0a0a;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s;
+        }
+        .login-btn:hover { transform: scale(1.02); box-shadow: 0 0 20px #00ff8855; }
+
+        /* CHAT */
+        .chat-screen { display: none; flex-direction: column; height: 100vh; }
+        .chat-screen.active { display: flex; }
+
+        /* Header */
+        .chat-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: #111;
+            border-bottom: 1px solid #222;
+            gap: 12px;
+        }
+        .chat-header .avatar-sm { font-size: 2em; }
+        .chat-header .info h2 { font-size: 1em; color: #fff; }
+        .chat-header .info span { font-size: 0.75em; color: #00ff88; }
+        .chat-header .call-btn {
+            margin-left: auto;
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: #00ff88;
+            color: #0a0a0a;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .chat-header .call-btn:hover { box-shadow: 0 0 15px #00ff88; transform: scale(1.1); }
+        .chat-header .call-btn.active { background: #ff4444; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+        /* Messages */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .msg {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 16px;
+            font-size: 0.9em;
+            line-height: 1.4;
+            animation: msgIn 0.3s ease-out;
+        }
+        @keyframes msgIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .msg.user {
+            align-self: flex-end;
+            background: #00ff88;
+            color: #0a0a0a;
+            border-bottom-right-radius: 4px;
+        }
+        .msg.bot {
+            align-self: flex-start;
+            background: #1e1e3a;
+            color: #e0e0e0;
+            border-bottom-left-radius: 4px;
+        }
+        .msg .time { font-size: 0.65em; opacity: 0.5; margin-top: 4px; }
+        .typing {
+            align-self: flex-start;
+            color: #666;
+            font-size: 0.8em;
+            padding: 8px 16px;
+        }
+        .typing-dots span {
+            animation: dot 1.4s infinite;
+            opacity: 0.3;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dot { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+        /* Input area */
+        .input-area {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            background: #111;
+            border-top: 1px solid #222;
+            gap: 8px;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #333;
+            border-radius: 24px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 0.9em;
+            outline: none;
+        }
+        .input-area input:focus { border-color: #00ff88; }
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: #00ff88;
+            color: #0a0a0a;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .send-btn:hover { transform: scale(1.1); }
+
+        /* Voice call overlay */
+        .voice-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 100%);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .voice-overlay.active { display: flex; }
+        .voice-overlay .avatar-lg { font-size: 8em; animation: float 2s ease-in-out infinite; }
+        .voice-overlay h2 { color: #fff; font-size: 1.5em; margin: 10px 0 5px; }
+        .voice-overlay .status-text {
+            color: #00ff88;
+            font-size: 0.9em;
+            margin-bottom: 40px;
+        }
+        .voice-waves {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 40px;
+            margin-bottom: 40px;
+        }
+        .voice-waves .bar {
+            width: 4px;
+            height: 10px;
+            background: #00ff88;
+            border-radius: 2px;
+            animation: wave 0.8s ease-in-out infinite;
+        }
+        .voice-waves .bar:nth-child(1) { animation-delay: 0s; }
+        .voice-waves .bar:nth-child(2) { animation-delay: 0.1s; }
+        .voice-waves .bar:nth-child(3) { animation-delay: 0.2s; }
+        .voice-waves .bar:nth-child(4) { animation-delay: 0.3s; }
+        .voice-waves .bar:nth-child(5) { animation-delay: 0.4s; }
+        .voice-waves .bar:nth-child(6) { animation-delay: 0.3s; }
+        .voice-waves .bar:nth-child(7) { animation-delay: 0.2s; }
+        .voice-waves .bar:nth-child(8) { animation-delay: 0.1s; }
+        @keyframes wave { 0%,100%{height:8px} 50%{height:35px} }
+        .end-call-btn {
+            width: 70px;
+            height: 70px;
+            border: none;
+            border-radius: 50%;
+            background: #ff4444;
+            color: #fff;
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .end-call-btn:hover { background: #cc0000; transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+    <div class="avatar">📚</div>
+    <h1>MaxChat</h1>
+    <p>Habla con Max en tiempo real</p>
+    <input class="login-input" id="nameInput" placeholder="Tu nombre..." maxlength="20" autofocus>
+    <button class="login-btn" id="loginBtn">Entrar</button>
+</div>
+
+<!-- CHAT -->
+<div class="chat-screen" id="chatScreen">
+    <div class="chat-header">
+        <div class="avatar-sm">📚</div>
+        <div class="info">
+            <h2>Max</h2>
+            <span id="statusText">En línea</span>
+        </div>
+        <button class="call-btn" id="callBtn" title="Llamar">📞</button>
+    </div>
+    
+    <div class="messages" id="messages"></div>
+    
+    <div class="input-area">
+        <input id="msgInput" placeholder="Escribe un mensaje...">
+        <button class="send-btn" id="sendBtn">➤</button>
+    </div>
+</div>
+
+<!-- VOICE CALL OVERLAY -->
+<div class="voice-overlay" id="voiceOverlay">
+    <div class="avatar-lg">📚</div>
+    <h2>Max</h2>
+    <div class="status-text" id="voiceStatus">Conectando...</div>
+    <div class="voice-waves">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div>
+    </div>
+    <button class="end-call-btn" id="endCallBtn">📵</button>
+</div>
+
+<script>
+const SERVER = window.location.origin;
+let userName = '';
+let isInCall = false;
+let mediaRecorder = null;
+let audioContext = null;
+let mediaStream = null;
+
+// Elements
+const loginScreen = document.getElementById('loginScreen');
+const chatScreen = document.getElementById('chatScreen');
+const nameInput = document.getElementById('nameInput');
+const loginBtn = document.getElementById('loginBtn');
+const messages = document.getElementById('messages');
+const msgInput = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+const callBtn = document.getElementById('callBtn');
+const voiceOverlay = document.getElementById('voiceOverlay');
+const voiceStatus = document.getElementById('voiceStatus');
+const endCallBtn = document.getElementById('endCallBtn');
+const statusText = document.getElementById('statusText');
+
+// Login
+loginBtn.onclick = () => {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    userName = name;
+    loginScreen.style.display = 'none';
+    chatScreen.classList.add('active');
+    addMessage('bot', '¡Hola ' + userName + '! 👋 Soy Max. Escríbeme o presióname 📞 para llamarme por voz.');
+};
+
+nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') loginBtn.click(); });
+
+// Send message
+sendBtn.onclick = sendMessage;
+msgInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text) return;
+    addMessage('user', text);
+    msgInput.value = '';
+    getAIResponse(text);
+}
+
+function addMessage(type, text) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + type;
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    div.innerHTML = text + '<div class="time">' + time + '</div>';
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+async function getAIResponse(text) {
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.innerHTML = '<div class="typing-dots"><span>●</span><span>●</span><span>●</span></div>';
+    messages.appendChild(typing);
+    messages.scrollTop = messages.scrollHeight;
+    
+    try {
+        const res = await fetch(SERVER + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await res.json();
+        typing.remove();
+        addMessage('bot', data.reply || 'Sin respuesta');
+    } catch (e) {
+        typing.remove();
+        addMessage('bot', 'Error de conexión. Intenta de nuevo.');
+    }
+}
+
+// VOICE CALL
+callBtn.onclick = startCall;
+endCallBtn.onclick = endCall;
+
+async function startCall() {
+    if (isInCall) return;
+    isInCall = true;
+    callBtn.classList.add('active');
+    voiceOverlay.classList.add('active');
+    voiceStatus.textContent = '🎤 Conectando micrófono...';
+    
+    try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Set up continuous recording
+        mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'audio/webm' });
+        let chunks = [];
+        
+        mediaRecorder.ondataavailable = (e) => { chunks.push(e.data); };
+        
+        mediaRecorder.onstop = async () => {
+            if (chunks.length === 0) return;
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            chunks = [];
+            
+            voiceStatus.textContent = '🧠 Procesando...';
+            
+            // Convert to base64
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64 = reader.result.split(',')[1];
+                
+                // Transcribe
+                try {
+                    const transRes = await fetch(SERVER + '/api/transcribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ audio: base64 })
+                    });
+                    const transData = await transRes.json();
+                    const userText = transData.text || '';
+                    
+                    if (userText.trim()) {
+                        addMessage('user', '🎙️ ' + userText);
+                        voiceStatus.textContent = '💭 Max pensando...';
+                        
+                        // Get AI response
+                        const chatRes = await fetch(SERVER + '/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ message: userText })
+                        });
+                        const chatData = await chatRes.json();
+                        const reply = chatData.reply || 'Sin respuesta';
+                        
+                        addMessage('bot', reply);
+                        voiceStatus.textContent = '🔊 Max hablando...';
+                        
+                        // TTS - play response
+                        const ttsRes = await fetch(SERVER + '/api/tts', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text: reply, voice: 'es-MX-DaliaNeural' })
+                        });
+                        
+                        if (ttsRes.ok) {
+                            const audioBlob = await ttsRes.blob();
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const audio = new Audio(audioUrl);
+                            audio.onended = () => {
+                                URL.revokeObjectURL(audioUrl);
+                                if (isInCall) {
+                                    voiceStatus.textContent = '🎤 Escuchando...';
+                                    startRecording();
+                                }
+                            };
+                            audio.play();
+                        } else {
+                            if (isInCall) {
+                                voiceStatus.textContent = '🎤 Escuchando...';
+                                startRecording();
+                            }
+                        }
+                    } else {
+                        if (isInCall) {
+                            voiceStatus.textContent = '🎤 Escuchando...';
+                            startRecording();
+                        }
+                    }
+                } catch (e) {
+                    console.error('Voice error:', e);
+                    if (isInCall) {
+                        voiceStatus.textContent = '🎤 Escuchando...';
+                        startRecording();
+                    }
+                }
+            };
+            reader.readAsDataURL(blob);
+        };
+        
+        startRecording();
+        voiceStatus.textContent = '🎤 Escuchando...';
+        
+    } catch (e) {
+        alert('No se pudo acceder al micrófono: ' + e.message);
+        endCall();
+    }
+}
+
+function startRecording() {
+    if (!isInCall || !mediaRecorder) return;
+    chunks = [];
+    mediaRecorder.start();
+    
+    // Auto-stop after 10 seconds of silence or max 30 seconds
+    setTimeout(() => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+    }, 30000);
+}
+
+function endCall() {
+    isInCall = false;
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+    }
+    if (audioContext) {
+        audioContext.close();
+    }
+    mediaRecorder = null;
+    mediaStream = null;
+    audioContext = null;
+    callBtn.classList.remove('active');
+    voiceOverlay.classList.remove('active');
+}
+
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
